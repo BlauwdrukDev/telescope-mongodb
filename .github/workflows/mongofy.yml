@@ -1,0 +1,48 @@
+name: Update from parent repo
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: "Branch to sync"
+        required: true
+        default: "4.x"
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ github.event.inputs.branch }}
+
+      - name: Replace strings
+        run: |
+          sed -i 's/Illuminate\\Database\\Eloquent\\Model/MongoDB\\Laravel\\Eloquent\\Model/g' src/Storage/EntryModel.php
+          sed -i 's/Illuminate\\Database\\Eloquent\\Model/MongoDB\\Laravel\\Eloquent\\Model/g' src/Watchers/GateWatcher.php
+          sed -i 's/Illuminate\\Database\\Eloquent\\Model/MongoDB\\Laravel\\Eloquent\\Model/g' src/Watchers/NotificationWatcher.php
+          sed -i 's/Illuminate\\Database\\Eloquent\\Model/MongoDB\\Laravel\\Eloquent\\Model/g' src/Watchers/RequestWatcher.php
+          sed -i 's/Illuminate\\Database\\Eloquent\\Model/MongoDB\\Laravel\\Eloquent\\Model/g' src/FormatModel.php
+          sed -i 's/Illuminate\\Database\\Eloquent\\Model/MongoDB\\Laravel\\Eloquent\\Model/g' src/ExtractTags.php
+          sed -i 's/Illuminate\\Database\\Eloquent\\Model/MongoDB\\Laravel\\Eloquent\\Model/g' src/ExtractProperties.php
+
+      - name: Comment out a line of code
+        run: |
+          sed -i "s/\$query->where('should_display_on_index', true/\/\/&/" ./src/Storage/EntryModel.php
+
+      - name: Switch to 4.x-mongodb branch
+        run: |
+          git checkout 4.x-mongodb
+
+      - name: Merge changes
+        run: |
+          git merge --no-commit --no-ff ${{ github.event.inputs.branch }}
+
+      - name: Commit and push changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git commit -am "Update from parent repo"
+          git push
